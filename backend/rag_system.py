@@ -13,6 +13,13 @@ try:
 except ImportError:
     print("Warning: langchain packages not installed. Install with: pip install langchain langchain-community")
 
+# Import vertical Japanese PDF handler
+try:
+    from vertical_japanese import extract_text_from_pdf as extract_vertical_pdf
+except ImportError:
+    print("Warning: vertical_japanese module not found. Vertical Japanese PDFs may not be processed correctly.")
+    extract_vertical_pdf = None
+
 class RAGSystem:
     def __init__(self):
         self.embeddings = None
@@ -39,30 +46,78 @@ class RAGSystem:
             print("Creating new vector database...")
             await self.create_vectorstore()
     
+    def _load_vertical_pdf(self, pdf_path: Path) -> List[Document]:
+        """Load PDF with vertical Japanese text using OCR"""
+        if extract_vertical_pdf is None:
+            print(f"Warning: Vertical Japanese handler not available. Falling back to standard loader.")
+            loader = PyPDFLoader(str(pdf_path))
+            return loader.load()
+        
+        try:
+            print(f"Using vertical Japanese OCR for: {pdf_path.name}")
+            result = extract_vertical_pdf(str(pdf_path), lang="jpn_vert", clean_text=True)
+            
+            if result['success']:
+                # Create a Document for each page
+                docs = []
+                for page_num, page_text in enumerate(result['pages'], start=1):
+                    if page_text.strip():  # Only add non-empty pages
+                        doc = Document(
+                            page_content=page_text,
+                            metadata={
+                                'source': str(pdf_path),
+                                'page': page_num,
+                                'type': 'vertical_japanese',
+                                'total_pages': result['page_count']
+                            }
+                        )
+                        docs.append(doc)
+                return docs
+            else:
+                print(f"OCR failed for {pdf_path.name}: {result['error']}. Falling back to standard loader.")
+                loader = PyPDFLoader(str(pdf_path))
+                return loader.load()
+        except Exception as e:
+            print(f"Error in vertical PDF loading {pdf_path.name}: {e}. Falling back to standard loader.")
+            loader = PyPDFLoader(str(pdf_path))
+            return loader.load()
+    
     async def create_vectorstore(self):
-        """Create vector database from knowledge base files"""
+        """Create vector database from knowledge base files (including subdirectories)"""
         documents = []
         
-        # Load all PDF files
-        pdf_files = list(self.knowledge_base_path.glob("*.pdf"))
-        print(f"Found {len(pdf_files)} PDF files")
+        # Recursively find all PDF files in knowledge base and subdirectories
+        pdf_files = list(self.knowledge_base_path.rglob("*.pdf"))
+        print(f"Found {len(pdf_files)} PDF files (including subdirectories)")
         
         for pdf_file in pdf_files:
             try:
-                print(f"Loading: {pdf_file.name}")
-                loader = PyPDFLoader(str(pdf_file))
-                docs = loader.load()
-                documents.extend(docs)
+                # Get relative path from knowledge base
+                rel_path = pdf_file.relative_to(self.knowledge_base_path)
+                print(f"Loading: {rel_path}")
+                
+                # Check if PDF is in "Verticle writing" folder (note the typo in folder name)
+                if "Verticle writing" in str(rel_path) or "Vertical writing" in str(rel_path):
+                    # Use vertical Japanese handler
+                    docs = self._load_vertical_pdf(pdf_file)
+                    documents.extend(docs)
+                else:
+                    # Use standard PDF loader
+                    loader = PyPDFLoader(str(pdf_file))
+                    docs = loader.load()
+                    documents.extend(docs)
+                    
             except Exception as e:
                 print(f"Error loading {pdf_file.name}: {e}")
         
-        # Load Excel files
-        excel_files = list(self.knowledge_base_path.glob("*.xlsx"))
-        print(f"Found {len(excel_files)} Excel files")
+        # Recursively find all Excel files
+        excel_files = list(self.knowledge_base_path.rglob("*.xlsx"))
+        print(f"Found {len(excel_files)} Excel files (including subdirectories)")
         
         for excel_file in excel_files:
             try:
-                print(f"Loading: {excel_file.name}")
+                rel_path = excel_file.relative_to(self.knowledge_base_path)
+                print(f"Loading: {rel_path}")
                 loader = UnstructuredExcelLoader(str(excel_file), mode="elements")
                 docs = loader.load()
                 documents.extend(docs)

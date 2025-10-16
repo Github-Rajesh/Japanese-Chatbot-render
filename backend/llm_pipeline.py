@@ -4,7 +4,7 @@ import subprocess
 from typing import AsyncGenerator
 from openai import AsyncOpenAI
 from rag_system import RAGSystem
-from config import OPENAI_API_KEY, GPT_MODEL, RAKUTEN_MODEL
+from config import OPENAI_API_KEY, GPT_MODEL, RAKUTEN_MODEL, MAX_RESPONSE_TOKENS, RESPONSE_TEMPERATURE
 
 # Initialize OpenAI client
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
@@ -21,7 +21,7 @@ async def initialize_vector_db():
 async def query_gpt4o_mini_stream(user_query: str, context: str) -> AsyncGenerator[str, None]:
     """Query GPT-4o-mini with streaming support"""
     prompt = f"""あなたは日本の建築・法律に関する専門的な知識ベースアシスタントです。
-提供されたコンテキストを使用して、質問に正確かつ簡潔に答えてください。
+提供されたコンテキストを使用して、質問に正確かつ詳細に答えてください。
 
 コンテキスト:
 {context}
@@ -29,18 +29,18 @@ async def query_gpt4o_mini_stream(user_query: str, context: str) -> AsyncGenerat
 質問:
 {user_query}
 
-回答は日本語で、事実に基づいて正確に答えてください。"""
+回答は日本語で、事実に基づいて包括的に答えてください。必要に応じて、詳細な説明、具体例、関連する法令や規則の引用を含めてください。"""
 
     try:
         stream = await client.chat.completions.create(
             model=GPT_MODEL,
             messages=[
-                {"role": "system", "content": "あなたは論理的推論と知識検索を担当する専門アシスタントです。正確で簡潔な回答を提供してください。"},
+                {"role": "system", "content": "あなたは論理的推論と知識検索を担当する専門アシスタントです。質問の内容に応じて、必要な詳細を全て含んだ包括的で正確な回答を提供してください。"},
                 {"role": "user", "content": prompt}
             ],
             stream=True,
-            temperature=0.3,
-            max_tokens=2000
+            temperature=RESPONSE_TEMPERATURE,
+            max_tokens=MAX_RESPONSE_TOKENS
         )
         
         async for chunk in stream:

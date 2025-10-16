@@ -39,6 +39,10 @@ VECTORSTORE_PATH = BASE_DIR / "data" / "vectorstore"
 GPT_MODEL = "gpt-4o-mini"
 RAKUTEN_MODEL = "yuiseki/rakutenai-2.0-mini:1.5b-instruct"
 
+# LLM Response Configuration
+MAX_RESPONSE_TOKENS = 4096  # Maximum tokens for response generation
+RESPONSE_TEMPERATURE = 0.3   # Temperature for response generation (0.0-1.0)
+
 # RAG Configuration
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 200
