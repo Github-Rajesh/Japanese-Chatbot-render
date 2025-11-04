@@ -78,7 +78,7 @@ class ChatApp {
         
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
-        contentDiv.textContent = content;
+        contentDiv.innerHTML = this.formatMessage(content);
         
         messageDiv.appendChild(contentDiv);
         this.chatContainer.appendChild(messageDiv);
@@ -86,6 +86,62 @@ class ChatApp {
         this.scrollToBottom();
         
         return contentDiv;
+    }
+    
+    formatMessage(text) {
+        if (!text) return '';
+        
+        // Escape HTML to prevent XSS, then process formatting
+        const escapeHtml = (str) => {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        };
+        
+        // First, escape the text
+        let formatted = escapeHtml(text);
+        
+        // Convert numbered lists (e.g., "1.**Topic**: description")
+        // Pattern: number followed by period, optional space, optional bold text, colon
+        // Match until next number pattern or end of string
+        formatted = formatted.replace(/(\d+)\.\s*\*\*([^*]+)\*\*:([^0-9]*?)(?=\d+\.|$)/g, '<li><strong>$2</strong><span class="list-description">$3</span></li>');
+        
+        // Also handle numbered lists without bold (e.g., "1. Topic: description")
+        // Only match if it doesn't contain ** (already processed above) and doesn't contain <li> (already converted)
+        formatted = formatted.replace(/(\d+)\.\s*([^:]+):([^0-9]*?)(?=\d+\.|$)/g, (match, num, title, desc) => {
+            // Skip if already converted to HTML or contains bold markdown (double asterisks)
+            if (match.includes('<li>') || match.includes('**')) {
+                return match;
+            }
+            return `<li><strong>${title}</strong><span class="list-description">${desc}</span></li>`;
+        });
+        
+        // Wrap consecutive list items in <ol> tags
+        formatted = formatted.replace(/(<li>.*?<\/li>(?:\s*<li>.*?<\/li>)*)/g, '<ol>$1</ol>');
+        
+        // Convert bold markdown (**text**)
+        formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        
+        // Convert line breaks to <br> tags
+        formatted = formatted.replace(/\n/g, '<br>');
+        
+        // Split by double line breaks to create paragraphs
+        const paragraphs = formatted.split('<br><br>');
+        formatted = paragraphs.map(p => {
+            // If paragraph contains list, don't wrap in <p>
+            if (p.includes('<ol>') || p.includes('<li>')) {
+                return p;
+            }
+            // Otherwise wrap in <p> tag
+            return p.trim() ? `<p>${p}</p>` : '';
+        }).join('');
+        
+        return formatted;
+    }
+    
+    updateFormattedContent(element, newText) {
+        // Format the entire accumulated text
+        element.innerHTML = this.formatMessage(newText);
     }
     
     addLoadingMessage() {
@@ -139,6 +195,9 @@ class ChatApp {
             messageDiv.appendChild(contentDiv);
             this.chatContainer.appendChild(messageDiv);
             
+            // Accumulate text for streaming
+            let accumulatedText = '';
+            
             // Read stream
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
@@ -162,7 +221,9 @@ class ChatApp {
                         try {
                             const parsed = JSON.parse(data);
                             if (parsed.text) {
-                                contentDiv.textContent += parsed.text;
+                                accumulatedText += parsed.text;
+                                // Update formatted content
+                                this.updateFormattedContent(contentDiv, accumulatedText);
                                 this.scrollToBottom();
                             }
                         } catch (e) {

@@ -133,6 +133,60 @@ body {
     line-height: 1.6;
     color: var(--text-primary);
     max-width: 75%;
+    font-size: 15px;
+}
+
+.message-assistant .message-content p {
+    margin-bottom: 16px;
+    font-size: 15px;
+}
+
+.message-assistant .message-content p:last-child {
+    margin-bottom: 0;
+}
+
+.message-assistant .message-content ol {
+    margin: 16px 0;
+    padding-left: 28px;
+    list-style-type: decimal;
+}
+
+.message-assistant .message-content li {
+    margin-bottom: 16px;
+    padding-left: 8px;
+    line-height: 1.7;
+    font-size: 15px;
+    color: var(--text-primary);
+}
+
+.message-assistant .message-content li:last-child {
+    margin-bottom: 0;
+}
+
+/* Style headings/titles within list items - make them larger and more prominent */
+.message-assistant .message-content li strong {
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 6px;
+    letter-spacing: 0.01em;
+}
+
+/* Style description text within list items - slightly smaller and lighter */
+.message-assistant .message-content li .list-description {
+    font-size: 14px;
+    color: var(--text-secondary);
+    display: block;
+    line-height: 1.6;
+    margin-top: 2px;
+}
+
+/* Style bold text in paragraphs (general emphasis) - not in lists */
+.message-assistant .message-content p strong {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-primary);
 }
 
 .message-loading {
