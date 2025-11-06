@@ -1,0 +1,8 @@
+# Copy this file to .env and fill in your values
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Optional: Server configuration
+HOST=0.0.0.0
+PORT=8000
+ENVIRONMENT=production
+

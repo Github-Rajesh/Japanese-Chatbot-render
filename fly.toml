@@ -1,0 +1,27 @@
+# Fly.io configuration
+app = "japanese-chatbot"
+primary_region = "nrt"  # Tokyo region
+
+[build]
+  dockerfile = "Dockerfile.render"
+
+[env]
+  HOST = "0.0.0.0"
+  PORT = "8000"
+
+[[services]]
+  internal_port = 10000
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+[env]
+  OPENAI_API_KEY = "your_key_here"  # Set via: fly secrets set OPENAI_API_KEY=your_key
+

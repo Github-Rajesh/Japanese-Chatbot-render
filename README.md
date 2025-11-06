@@ -2,7 +2,35 @@
 
 Production-ready Japanese chatbot using **GPT-4o-mini** for reasoning and **RakutenAI** for natural Japanese language output. Features streaming responses and RAG (Retrieval Augmented Generation) from PDF documents.
 
-## 🚀 Quick Start
+## 🐳 Docker Deployment (Recommended for Production)
+
+### 🆓 Free Hosting Options (Recommended!)
+
+**Deploy for FREE so anyone from anywhere can access your chatbot!**
+
+- **Quick Free Deploy**: See [QUICK_FREE_DEPLOY.md](QUICK_FREE_DEPLOY.md) (5 minutes)
+- **Detailed Guide**: See [FREE_HOSTING_GUIDE.md](FREE_HOSTING_GUIDE.md)
+
+**Best Free Options:**
+- **Render.com** - Easiest, free tier, auto HTTPS ⭐ Recommended
+- **Railway.app** - Supports Docker Compose, $5 free credit/month
+- **Fly.io** - Free tier, great for containers
+- **Oracle Cloud** - Always free VPS
+
+### 💰 Paid Hosting (If needed)
+
+**Deploy to a server in Japan:**
+
+- See [QUICK_START_DOCKER.md](QUICK_START_DOCKER.md) for local Docker setup
+- See [DEPLOY_TO_JAPAN.md](DEPLOY_TO_JAPAN.md) for server deployment
+- See [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md) for detailed guide
+
+**Quick Start (Local):**
+1. Create `.env` file with your `OPENAI_API_KEY`
+2. Run `docker compose up -d --build`
+3. Access at http://localhost
+
+## 🚀 Quick Start (Local Development)
 
 ### Prerequisites
 - Python 3.9+

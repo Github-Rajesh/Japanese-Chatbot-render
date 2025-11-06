@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# Data and cache
+data/vectorstore/
+*.db
+*.sqlite
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+CHANGES.md
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Batch files (not needed in container)
+*.bat
+
+# Test files
+test_*.py
+
+# Temporary files
+*.tmp
+*.log
+
