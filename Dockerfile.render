@@ -24,6 +24,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ ./backend/
 COPY frontend/ /usr/share/nginx/html/
 
+# Note: Knowledge base directory will be created below
+# You can upload PDFs via the API or add them to the repo
+
 # Copy nginx config
 COPY nginx-render.conf /etc/nginx/sites-available/default
 RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
