@@ -1,39 +1,39 @@
-# Multi-stage build for Japanese Chatbot Backend
 FROM python:3.11-slim as base
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
-    wget \
+    nginx \
     tesseract-ocr \
     tesseract-ocr-jpn \
     tesseract-ocr-jpn-vert \
     poppler-utils \
     libmagic1 \
+    supervisor \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Copy requirements first for better caching
+# Copy requirements and install
 COPY requirements.txt .
-
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend code
+# Copy application code
 COPY backend/ ./backend/
+COPY frontend/ /usr/share/nginx/html/
 
-# Note: .env is not copied here - it's provided via docker-compose environment variables
-# or mounted as a volume. This makes the build more flexible.
+# Copy nginx config
+COPY nginx-render.conf /etc/nginx/sites-available/default
 
-# Create necessary directories
+# Copy supervisor config
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Create directories
 RUN mkdir -p "knowledge base main/uploads" "data/vectorstore"
 
-# Expose port
-EXPOSE 8000
+# Expose port (Render uses PORT environment variable)
+EXPOSE 10000
 
-# Run the application
-CMD ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
+# Start supervisor (runs both nginx and backend)
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
