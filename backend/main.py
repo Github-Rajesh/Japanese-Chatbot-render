@@ -4,9 +4,14 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import json
 import asyncio
+import sys
+from pathlib import Path
+
+# Add backend directory to Python path
+sys.path.insert(0, str(Path(__file__).parent))
+
 from llm_pipeline import generate_response_stream, initialize_vector_db
 from config import KNOWLEDGE_BASE_PATH
-from pathlib import Path
 
 app = FastAPI(title="Japanese Knowledge Base Chatbot")
 
