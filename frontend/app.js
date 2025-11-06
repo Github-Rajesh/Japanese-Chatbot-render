@@ -8,11 +8,36 @@ class ChatApp {
         this.chatContainer = document.getElementById('chatContainer');
         this.userInput = document.getElementById('userInput');
         this.sendButton = document.getElementById('sendButton');
+        this.pdfInput = document.getElementById('pdfInput');
+        this.uploadPdfButton = document.getElementById('uploadPdfButton');
+        this.sessionId = this.getOrCreateSessionId();
         
         this.isProcessing = false;
         this.messages = [];
         
         this.init();
+    }
+
+    getOrCreateSessionId() {
+        try {
+            let sid = localStorage.getItem('chat_session_id');
+            if (!sid) {
+                sid = this.uuidv4();
+                localStorage.setItem('chat_session_id', sid);
+            }
+            return sid;
+        } catch (e) {
+            // Fallback: generate ephemeral id
+            return this.uuidv4();
+        }
+    }
+
+    uuidv4() {
+        // Simple UUID generator
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
     }
     
     init() {
@@ -34,6 +59,12 @@ class ChatApp {
         this.sendButton.addEventListener('click', () => {
             this.sendMessage();
         });
+
+        // PDF upload handlers
+        if (this.uploadPdfButton && this.pdfInput) {
+            this.uploadPdfButton.addEventListener('click', () => this.pdfInput.click());
+            this.pdfInput.addEventListener('change', () => this.uploadPdf());
+        }
     }
     
     async sendMessage() {
@@ -173,7 +204,8 @@ class ChatApp {
                 },
                 body: JSON.stringify({
                     query: query,
-                    stream: true
+                    stream: true,
+                    session_id: this.sessionId
                 })
             });
             
@@ -236,6 +268,44 @@ class ChatApp {
         } catch (error) {
             console.error('Streaming error:', error);
             throw error;
+        }
+    }
+
+    async uploadPdf() {
+        const file = this.pdfInput.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file, file.name);
+
+        // Simple UI feedback
+        const statusMsg = this.addMessage('assistant', `アップロード中: ${file.name}`);
+
+        try {
+            const res = await fetch(`${API_URL}/upload_pdf`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                this.updateFormattedContent(statusMsg, `アップロード成功: ${file.name}`);
+                // Optionally notify indexing progress
+                if (data.indexing === true) {
+                    this.addMessage('assistant', 'インデックス作成が完了しました。資料が検索可能になりました。');
+                } else {
+                    this.addMessage('assistant', 'ファイルはアップロードされましたが、インデックス作成中にエラーが発生しました。');
+                }
+            } else {
+                this.updateFormattedContent(statusMsg, `アップロード失敗: ${data.detail || JSON.stringify(data)}`);
+            }
+        } catch (e) {
+            console.error('Upload error', e);
+            this.addMessage('assistant', 'アップロード中にエラーが発生しました。');
+        } finally {
+            // Reset file input
+            this.pdfInput.value = '';
+            this.scrollToBottom();
         }
     }
     

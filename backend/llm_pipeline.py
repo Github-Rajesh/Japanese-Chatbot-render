@@ -78,15 +78,27 @@ def refine_with_rakutenai(text: str) -> str:
         print(f"Error in RakutenAI: {e} - returning original text")
         return text
 
-async def generate_response_stream(user_query: str) -> AsyncGenerator[str, None]:
-    """Generate streaming response through the full pipeline"""
-    
-    # Step 1: Retrieve context from knowledge base
+async def generate_response_stream(user_query: str, session_id: str | None = None) -> AsyncGenerator[str, None]:
+    """Generate streaming response through the full pipeline.
+
+    If session_id is provided, the user turn and assistant turn will be added
+    to the conversation vectorstore so they become part of conversational memory.
+    """
+
+    # Ensure RAG system initialized
     if rag is None:
         await initialize_vector_db()
-    
-    context = await rag.retrieve_context(user_query)
-    
+
+    # If session_id provided, log the user turn into conversation memory
+    if session_id is not None and rag is not None:
+        try:
+            await rag.add_conversation_turn(session_id, 'user', user_query)
+        except Exception as e:
+            print(f"Warning: failed to add user conversation turn: {e}")
+
+    # Step 1: Retrieve context from knowledge base + conversation memory
+    context = await rag.retrieve_context(user_query) if rag is not None else ""
+
     # Step 2: Stream response from GPT-4o-mini
     draft_response = ""
     async for chunk in query_gpt4o_mini_stream(user_query, context):
@@ -99,4 +111,11 @@ async def generate_response_stream(user_query: str) -> AsyncGenerator[str, None]
     # Optional: Add a refinement pass (currently disabled for speed)
     # This can be enabled for non-streaming responses
     # refined = await asyncio.to_thread(refine_with_rakutenai, draft_response)
+
+    # If session_id provided, add the assistant turn to conversation memory
+    if session_id is not None and rag is not None:
+        try:
+            await rag.add_conversation_turn(session_id, 'assistant', draft_response)
+        except Exception as e:
+            print(f"Warning: failed to add assistant conversation turn: {e}")
 
